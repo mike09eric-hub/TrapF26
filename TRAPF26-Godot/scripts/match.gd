@@ -127,6 +127,41 @@ func _build_hud() -> void:
 	stamina_bar.max_value = 100
 	stamina_bar.value = 100
 	layer.add_child(stamina_bar)
+	_add_hold_button(layer, "UP", Vector2(90, -150), "move_forward", Vector2(58, 58))
+	_add_hold_button(layer, "DOWN", Vector2(90, -38), "move_back", Vector2(58, 58))
+	_add_hold_button(layer, "LEFT", Vector2(26, -94), "move_left", Vector2(58, 58))
+	_add_hold_button(layer, "RIGHT", Vector2(154, -94), "move_right", Vector2(58, 58))
+	_add_hold_button(layer, "SPRINT", Vector2(-190, -90), "sprint", Vector2(86, 58))
+	_add_action_button(layer, "PASS", Vector2(-190, -154), "pass_ball")
+	_add_action_button(layer, "SHOOT", Vector2(-96, -154), "shoot_ball")
+
+func _add_hold_button(layer: CanvasLayer, caption: String, offset: Vector2, action: String, button_size: Vector2) -> void:
+	var button := Button.new()
+	button.text = caption
+	button.size = button_size
+	button.anchor_left = 0.0
+	button.anchor_top = 1.0
+	button.anchor_right = 0.0
+	button.anchor_bottom = 1.0
+	button.position = offset
+	button.button_down.connect(func(): Input.action_press(action))
+	button.button_up.connect(func(): Input.action_release(action))
+	layer.add_child(button)
+
+func _add_action_button(layer: CanvasLayer, caption: String, offset: Vector2, action: String) -> void:
+	var button := Button.new()
+	button.text = caption
+	button.size = Vector2(82, 62)
+	button.anchor_left = 1.0
+	button.anchor_top = 1.0
+	button.anchor_right = 1.0
+	button.anchor_bottom = 1.0
+	button.position = offset
+	button.pressed.connect(func():
+		Input.action_press(action)
+		Input.action_release(action)
+	)
+	layer.add_child(button)
 
 func _process(delta: float) -> void:
 	if not match_running or user_player == null:
