@@ -1,5 +1,42 @@
 <!doctype html>
-<!-- TRAPF 26 Prototype 0.1 -->
-<!-- Full playable prototype source -->
-<!-- The game engine is loaded from Babylon.js CDN; internet is required. -->
-<!-- Source follows. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="theme-color" content="#071b2d"><title>TRAPF 26</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#071b2d;color:white;font-family:system-ui;touch-action:none}#game{width:100%;height:100%;display:block}#hud{position:fixed;inset:0;pointer-events:none}.top{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:12px;background:#061523dd;border:1px solid #ffffff40;border-radius:14px;padding:9px 14px;font-weight:900;white-space:nowrap}#joystick{position:absolute;left:20px;bottom:24px;width:112px;height:112px;border-radius:50%;background:#ffffff25;border:2px solid #ffffff66;pointer-events:auto;touch-action:none}#stick{position:absolute;left:31px;top:31px;width:46px;height:46px;border-radius:50%;background:#d9f1ffdd;border:2px solid white}.actions{position:absolute;right:18px;bottom:28px;display:flex;gap:12px;pointer-events:auto}.btn{width:72px;height:72px;border-radius:50%;border:2px solid white;color:white;background:#102c45eF;font-weight:900;touch-action:none}.btn.big{width:84px;height:84px;background:#079b61}.overlay{position:fixed;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;padding:22px;background:linear-gradient(145deg,#071b2d,#123b4b)}.panel{width:100%;max-width:420px;text-align:center;padding:25px;border-radius:22px;background:#071827ee;border:1px solid #58c5d5}.logo{font-size:40px;font-weight:1000;letter-spacing:2px;color:#b9f4ff}.muted{color:#b7cbd5;font-size:13px;line-height:1.5}button.start{padding:14px 30px;border:0;border-radius:13px;background:linear-gradient(90deg,#00a86b,#0d79b5);color:white;font-size:16px;font-weight:900}
+</style></head><body><canvas id="game"></canvas><div id="hud"><div class="top"><span>TRAPF 26</span><span id="score">YOU 0 — 0 CPU</span><span id="clock">00:00</span></div><div id="joystick"><div id="stick"></div></div><div class="actions"><button class="btn" id="run">RUN</button><button class="btn big" id="shoot">SHOOT</button></div></div>
+<div class="overlay" id="overlay"><div class="panel"><div class="logo">TRAPF 26</div><h2>FIRST MATCH</h2><p class="muted">3D football prototype. Move with the joystick, sprint with RUN and shoot with SHOOT. Internet is needed to load the 3D engine.</p><button class="start" id="start">KICK OFF</button></div></div>
+<script src="https://cdn.babylonjs.com/babylon.js"></script><script>
+(()=>{const canvas=document.getElementById('game'),B=window.BABYLON;if(!B){document.querySelector('.muted').textContent='3D engine failed to load. Check internet and refresh.';return}
+const engine=new B.Engine(canvas,true,{antialias:true}),scene=new B.Scene(engine);scene.clearColor=new B.Color4(.48,.72,.86,1);
+const V=(x,y,z)=>new B.Vector3(x,y,z),mat=(n,c)=>{let m=new B.StandardMaterial(n,scene);m.diffuseColor=B.Color3.FromHexString(c);return m};
+const green=mat('grass','#258448'),white=mat('lines','#ffffff'),navy=mat('navy','#132d45'),blue=mat('blue','#087fc1'),red=mat('red','#d0444d'),skin=mat('skin','#bd896b'),black=mat('black','#15191e');
+let hemi=new B.HemisphericLight('light',V(0,1,0),scene);hemi.intensity=.95;let sun=new B.DirectionalLight('sun',V(-.5,-1,.4),scene);sun.position=V(-20,35,-20);
+let pitch=B.MeshBuilder.CreateGround('pitch',{width:42,height:66},scene);pitch.material=green;
+function line(w,h,d,x,y,z){let o=B.MeshBuilder.CreateBox('mark',{width:w,height:h,depth:d},scene);o.position.set(x,y,z);o.material=white}
+line(42,.025,.12,0,.02,-33);line(42,.025,.12,0,.02,33);line(.12,.025,66,-21,.02,0);line(.12,.025,66,21,.02,0);line(42,.025,.12,0,.02,0);
+let circle=B.MeshBuilder.CreateTorus('centre',{diameter:10,thickness:.1},scene);circle.rotation.x=Math.PI/2;circle.position.y=.04;circle.material=white;
+for(let z of [-33,33]){let goal=B.MeshBuilder.CreateBox('goal',{width:12,height:3,depth:.35},scene);goal.position.set(0,1.5,z);goal.material=white;goal.visibility=.5}
+for(let side of [-1,1])for(let r=0;r<4;r++){let stand=B.MeshBuilder.CreateBox('stand',{width:5,height:1,depth:68},scene);stand.position.set(side*(24+r*.6),1+r*.8,0);stand.material=navy}
+function player(name,color,x,z){let root=new B.TransformNode(name,scene),shirt=mat(name+'shirt',color);let torso=B.MeshBuilder.CreateCapsule(name+'body',{height:1.2,radius:.28},scene);torso.parent=root;torso.position.y=1.05;torso.material=shirt;let head=B.MeshBuilder.CreateSphere(name+'head',{diameter:.4},scene);head.parent=root;head.position.y=1.85;head.material=skin;for(let s of [-1,1]){let leg=B.MeshBuilder.CreateBox(name+'leg',{width:.18,height:.65,depth:.2},scene);leg.parent=root;leg.position.set(s*.14,.35,0);leg.material=black}root.position.set(x,0,z);return root}
+let me=player('you','#087fc1',0,12),cpu=[player('cpu1','#d0444d',-5,-7),player('cpu2','#d0444d',5,-12),player('cpu3','#d0444d',0,-20)];
+let ball=B.MeshBuilder.CreateSphere('ball',{diameter:.65,segments:16},scene);ball.position.set(0,.35,5);ball.material=mat('ball','#f4f4f4');
+let camera=new B.FollowCamera('camera',V(0,6,-12),scene);camera.lockedTarget=me;camera.radius=17;camera.heightOffset=7;camera.rotationOffset=0;camera.cameraAcceleration=.06;camera.maxCameraSpeed=20;
+let move={x:0,z:0},sprint=false,active=false,score=0,against=0,time=0,vel=V(0,0,0),keys={};
+const scoreEl=document.getElementById('score'),clockEl=document.getElementById('clock');
+function updateHud(){scoreEl.textContent='YOU '+score+' — '+against+' CPU';clockEl.textContent=String(Math.floor(time/60)).padStart(2,'0')+':'+String(Math.floor(time%60)).padStart(2,'0')}
+function resetBall(){ball.position.set(0,.35,5);vel.set(0,0,0);me.position.set(0,0,12)}
+function shoot(){if(!active)return;let dx=ball.position.x-me.position.x,dz=ball.position.z-me.position.z;if(Math.hypot(dx,dz)<3.2){vel=V(-me.position.x*.12,1.1,-15);}}
+document.getElementById('start').onclick=()=>{active=true;document.getElementById('overlay').style.display='none'};
+document.getElementById('shoot').onpointerdown=e=>{e.preventDefault();shoot()};
+document.getElementById('run').onpointerdown=()=>sprint=true;document.getElementById('run').onpointerup=()=>sprint=false;document.getElementById('run').onpointerleave=()=>sprint=false;
+let joy=document.getElementById('joystick'),stick=document.getElementById('stick'),drag=false;
+joy.onpointerdown=e=>{drag=true;joy.setPointerCapture(e.pointerId);moveJoy(e)};joy.onpointermove=e=>{if(drag)moveJoy(e)};joy.onpointerup=joy.onpointercancel=()=>{drag=false;move={x:0,z:0};stick.style.left='31px';stick.style.top='31px'};
+function moveJoy(e){let r=joy.getBoundingClientRect(),x=e.clientX-(r.left+r.width/2),y=e.clientY-(r.top+r.height/2),len=Math.hypot(x,y),k=Math.min(1,48/(len||1));move={x:x*k/48,z:y*k/48};stick.style.left=(31+x*k)+'px';stick.style.top=(31+y*k)+'px'}
+window.onkeydown=e=>{keys[e.key.toLowerCase()]=true;if(e.code==='Space')shoot();if(e.key.toLowerCase()==='shift')sprint=true};window.onkeyup=e=>{keys[e.key.toLowerCase()]=false;if(e.key.toLowerCase()==='shift')sprint=false};
+engine.runRenderLoop(()=>{let dt=Math.min(engine.getDeltaTime()/1000,.04);if(active){time+=dt;let x=move.x+(keys.d?1:0)-(keys.a?1:0),z=move.z+(keys.s?1:0)-(keys.w?1:0),len=Math.hypot(x,z)||1,speed=sprint?8:5.2;me.position.x+=x/len*speed*dt;me.position.z+=z/len*speed*dt;me.position.x=B.Scalar.Clamp(me.position.x,-19,19);me.position.z=B.Scalar.Clamp(me.position.z,-29,29);if(x||z)me.rotation.y=Math.atan2(x,z);
+let d=B.Vector3.Distance(me.position,ball.position);if(d<1.5){let dir=V(ball.position.x-me.position.x,0,ball.position.z-me.position.z);dir.normalize();ball.position.x+=dir.x*dt*2;ball.position.z+=dir.z*dt*2}
+cpu.forEach((p,i)=>{let target=ball.position.subtract(p.position);target.y=0;if(target.length()>1.1){target.normalize();p.position.addInPlace(target.scale(dt*(2.2+i*.15))) }});
+ball.position.addInPlace(vel.scale(dt));vel.scaleInPlace(.985);ball.position.y=Math.max(.35,ball.position.y+Math.sin(time*9)*.002);if(Math.abs(ball.position.x)>20)vel.x*=-.7;
+if(ball.position.z<-32){score++;updateHud();resetBall()}if(ball.position.z>32){against++;updateHud();resetBall()}updateHud()}
+scene.render()});window.addEventListener('resize',()=>engine.resize());
+})();
+</script></body></html>
